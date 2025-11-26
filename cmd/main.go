@@ -24,11 +24,15 @@ var NORMAL_CHARS = []string{
 
 var CHAR_LIST = NORMAL_CHARS
 
+var colored = false
+var grayColored = false
+var onlyColored = false
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("ascime")
 
-		fmt.Println("usage: cgraph [image_path1, image_path2] [args...]")
+		fmt.Println("usage: ascime [image_path1, image_path2] [args...]")
 		return
 	}
 
@@ -49,9 +53,24 @@ func main() {
 		} else {
 			switch arg {
 			case "-c":
-				continue
+				colored = true
+				if i+1 < len(args) {
+					if !slices.Contains([]string{"gray", "only"}, args[i+1]) && !slices.Contains(commands, args[i+1]) {
+						fmt.Printf("expected either [gray, only] after -c, got: %q", args[i+1])
+						return
+					}
+
+					skipCurrent = true // skip next argument if not command
+					switch args[i+1] {
+					case "gray":
+						colored = false
+						grayColored = true
+					case "only":
+						onlyColored = true
+					}
+				}
 			case "-w":
-				if (i+1 < len(args)) {
+				if i+1 < len(args) {
 					skipCurrent = true // skip next argument if not command
 					intWidth, err := strconv.Atoi(args[i+1])
 					if err != nil {
@@ -88,9 +107,14 @@ func imageToAscii(path string, newWidth int) string {
 	}
 
 	img = resizeImage(img, newWidth)
-	img = toGray(img)
-	asciiStr := pixelsToAscii(img)
 
+	var asciiStr string
+	if !colored {
+		grayImg := toGray(img)
+		asciiStr = pixelsToAscii(grayImg)
+	} else {
+		asciiStr = pixelsToAscii(img)
+	}
 	return asciiStr
 }
 
@@ -145,10 +169,23 @@ func pixelsToAscii(src image.Image) string {
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			r, _, _, _ := src.At(x, y).RGBA()
-			gray := uint8(r >> 8)
-			index := int(gray) * (len(CHAR_LIST) - 1) / 255
-			asciiStr += CHAR_LIST[index]
+			c := color.RGBAModel.Convert(src.At(x, y)).(color.RGBA)
+			gray := c.R
+
+			var index int
+			if !onlyColored {
+				index = int(gray) * (len(CHAR_LIST) - 1) / 255
+			} else {
+				index = 0
+			}
+
+			r, g, b := c.R, c.G, c.B
+			char := CHAR_LIST[index]
+			if colored || grayColored {
+				asciiStr += fmt.Sprintf("\x1b[38;2;%d;%d;%dm%s\x1b[0m", r, g, b, char)
+			} else {
+				asciiStr += char
+			}
 		}
 
 		asciiStr += "\n"
