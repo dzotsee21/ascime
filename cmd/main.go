@@ -30,7 +30,14 @@ var onlyColored = false
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("ascime")
+		rgb := "\x1b[38;2;0;200;255m"
+		reset := "\x1b[0m"
+
+		fmt.Println(rgb + `
+		░█▀▀▄░█▀▀░█▀▄░░▀░░█▀▄▀█░█▀▀
+		▒█▄▄█░▀▀▄░█░░░░█▀░█░▀░█░█▀▀
+		▒█░▒█░▀▀▀░▀▀▀░▀▀▀░▀░░▒▀░▀▀▀
+		` + reset)
 
 		fmt.Println("usage: ascime [image_path1, image_path2] [args...]")
 		return
