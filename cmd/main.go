@@ -14,7 +14,15 @@ import (
 	rDraw "golang.org/x/image/draw"
 )
 
-var ASCII_CHARS = []string{"@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."}
+var SIMPLE_CHARS = []string{"@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."}
+var NORMAL_CHARS = []string{
+	"$", "@", "B", "%", "8", "&", "W", "M", "#", "*", "o", "a", "h", "k", "b", "d", "p", "q", "w", "m",
+	"Z", "O", "0", "Q", "L", "C", "J", "U", "Y", "X", "z", "c", "v", "u", "n", "x", "r", "j", "f", "t",
+	"/", "\\", "|", "(", ")", "1", "{", "}", "[", "]", "?", "-", "_", "+", "~", "<", ">",
+	"i", "!", "l", "I", ";", ":", ",", "\"", "^", "`", "'", ".", " ",
+}
+
+var CHAR_LIST = NORMAL_CHARS
 
 func main() {
 	if len(os.Args) < 2 {
@@ -26,7 +34,7 @@ func main() {
 
 	args := os.Args[1:]
 
-	commands := []string{"-c", "-w", "-numeric"}
+	commands := []string{"-c", "-w", "-s"}
 	width := 100
 	skipCurrent := false
 	var imagePaths []string
@@ -43,16 +51,20 @@ func main() {
 			case "-c":
 				continue
 			case "-w":
-				if (i+1 > len(args)) {
+				if (i+1 < len(args)) {
 					skipCurrent = true // skip next argument if not command
-					intWidth, _ := strconv.Atoi(args[i+1])
+					intWidth, err := strconv.Atoi(args[i+1])
+					if err != nil {
+						fmt.Printf("expected number after -w, got: %q", args[i+1])
+						return
+					}
 					width = intWidth
 				} else {
 					continue
 				}
 
-			case "-numeric":
-				continue
+			case "-s":
+				CHAR_LIST = SIMPLE_CHARS
 			}
 		}
 	}
@@ -135,8 +147,10 @@ func pixelsToAscii(src image.Image) string {
 		for x := 0; x < width; x++ {
 			r, _, _, _ := src.At(x, y).RGBA()
 			gray := uint8(r >> 8)
-			asciiStr += ASCII_CHARS[gray/25]
+			index := int(gray) * (len(CHAR_LIST) - 1) / 255
+			asciiStr += CHAR_LIST[index]
 		}
+
 		asciiStr += "\n"
 	}
 
