@@ -15,7 +15,7 @@ import (
 )
 
 // default params
-var CHAR_LIST = EXTENDED_CHARS
+var CHAR_LIST = DEFAULT_CHARS
 var colored = false
 var grayColored = false
 var onlyColored = false
@@ -47,7 +47,7 @@ func main() {
 
 func setParams(args []string) ([]string, error) {
 	var imagePaths []string
-	commands := []string{"-c", "-w", "-s"}
+	commands := []string{"-c", "-w", "-a"}
 	skipCurrent := false
 	for i, arg := range args {
 		if !slices.Contains(commands, arg) {
@@ -90,8 +90,23 @@ func setParams(args []string) ([]string, error) {
 					}
 					width = intWidth
 				}
-			case "-s":
-				CHAR_LIST = SIMPLE_CHARS
+			case "-a":
+				if i+1 < len(args) {
+					option := args[i+1]
+					skipCurrent = true
+					switch option {
+					case "s", "simple":
+						CHAR_LIST = SIMPLE_CHARS
+					case "d", "default":
+						CHAR_LIST = DEFAULT_CHARS
+					case "e", "extended":
+						CHAR_LIST = EXTENDED_CHARS
+					case "u", "unicode":
+						CHAR_LIST = UNICODE_CHARS
+					default:
+						CHAR_LIST = SIMPLE_CHARS
+					}
+				}
 			}
 		}
 	}
