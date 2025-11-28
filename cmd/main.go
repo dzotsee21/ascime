@@ -14,19 +14,12 @@ import (
 	rDraw "golang.org/x/image/draw"
 )
 
-var SIMPLE_CHARS = []string{"@", "#", "S", "%", "?", "*", "+", ";", ":", ",", "."}
-var NORMAL_CHARS = []string{
-	"$", "@", "B", "%", "8", "&", "W", "M", "#", "*", "o", "a", "h", "k", "b", "d", "p", "q", "w", "m",
-	"Z", "O", "0", "Q", "L", "C", "J", "U", "Y", "X", "z", "c", "v", "u", "n", "x", "r", "j", "f", "t",
-	"/", "\\", "|", "(", ")", "1", "{", "}", "[", "]", "?", "-", "_", "+", "~", "<", ">",
-	"i", "!", "l", "I", ";", ":", ",", "\"", "^", "`", "'", ".", " ",
-}
-
-var CHAR_LIST = NORMAL_CHARS
-
+// default params
+var CHAR_LIST = EXTENDED_CHARS
 var colored = false
 var grayColored = false
 var onlyColored = false
+var width = 100
 
 func main() {
 	if len(os.Args) < 2 {
@@ -44,11 +37,18 @@ func main() {
 	}
 
 	args := os.Args[1:]
+	imagePaths, err := setParams(args)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	commands := []string{"-c", "-w", "-s"}
-	width := 100
-	skipCurrent := false
+	run(imagePaths)
+}
+
+func setParams(args []string) ([]string, error) {
 	var imagePaths []string
+	commands := []string{"-c", "-w", "-s"}
+	skipCurrent := false
 	for i, arg := range args {
 		if !slices.Contains(commands, arg) {
 			if skipCurrent {
@@ -60,41 +60,46 @@ func main() {
 		} else {
 			switch arg {
 			case "-c":
-				colored = true
+				var chosenOption string
 				if i+1 < len(args) {
-					if !slices.Contains([]string{"gray", "only"}, args[i+1]) && !slices.Contains(commands, args[i+1]) {
-						fmt.Printf("expected either [gray, only] after -c, got: %q", args[i+1])
-						return
-					}
-
-					skipCurrent = true // skip next argument if not command
-					switch args[i+1] {
-					case "gray":
-						colored = false
-						grayColored = true
-					case "only":
-						onlyColored = true
-					}
+					chosenOption = args[i+1]
 				}
+
+				options := []string{"gray", "only", ""}
+				if !slices.Contains(options, chosenOption) && !slices.Contains(commands, chosenOption) {
+					return []string{}, fmt.Errorf("expected either [gray, only or ''] after -c, got: %q", chosenOption)
+				}
+
+				skipCurrent = true // skip next argument if not command
+				switch chosenOption {
+				case "gray":
+					grayColored = true
+				case "only":
+					colored = true
+					onlyColored = true
+				default:
+					colored = true
+				}
+
 			case "-w":
 				if i+1 < len(args) {
 					skipCurrent = true // skip next argument if not command
 					intWidth, err := strconv.Atoi(args[i+1])
 					if err != nil {
-						fmt.Printf("expected number after -w, got: %q", args[i+1])
-						return
+						return []string{}, fmt.Errorf("expected number after -w, got: %q", args[i+1])
 					}
 					width = intWidth
-				} else {
-					continue
 				}
-
 			case "-s":
 				CHAR_LIST = SIMPLE_CHARS
 			}
 		}
 	}
 
+	return imagePaths, nil
+}
+
+func run(imagePaths []string) {
 	for _, path := range imagePaths {
 		asciiStr := imageToAscii(path, width)
 		fmt.Println(asciiStr)
