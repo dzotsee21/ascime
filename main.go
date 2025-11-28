@@ -7,12 +7,18 @@ import (
 	"image/draw"
 	_ "image/jpeg"
 	_ "image/png"
+	"log"
 	"os"
+	"os/signal"
 	"slices"
 	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
 	rDraw "golang.org/x/image/draw"
 )
+
 
 // default params
 var CHAR_LIST = DEFAULT_CHARS
@@ -115,8 +121,44 @@ func setParams(args []string) ([]string, error) {
 }
 
 func run(imagePaths []string) {
+	var asciiStr string
 	for _, path := range imagePaths {
-		asciiStr := imageToAscii(path, width)
+		if strings.Contains(path, ".gif") {
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+			frameDelay := 100 * time.Millisecond // gif speed
+
+			go func() {
+				<-c
+				fmt.Print("\033[0m")
+				fmt.Print("\033[H\033[2J")
+				err := os.RemoveAll("tmp")
+				if err != nil {
+					fmt.Println("Failed to remove tmp:", err)
+				}
+				os.Exit(0)
+			}()
+
+			frames, err := SplitAnimatedGIF(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+			for {
+				for _, frame := range frames {
+					asciiStr = imageToAscii(frame, width)
+
+					fmt.Print("\033[2J")
+					fmt.Print("\033[H")
+
+					fmt.Println(asciiStr)
+
+					time.Sleep(frameDelay)
+				}
+			}
+		}
+
+		asciiStr = imageToAscii(path, width)
 		fmt.Println(asciiStr)
 	}
 }
