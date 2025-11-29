@@ -4,7 +4,7 @@
 
 commands:
 <br />
-`ascime <img_path> -a` - Use different character set (**params**: `-a s` or `-a simple`, `-a d` or `-a default`, `-a e` or `-a extended`, `-a u` or `-a unicode`) (default is NORMAL_CHARS)
+`ascime <img_path> -a` - Use different character set (**options**: `-a s` or `-a simple`, `-a d` or `-a default`, `-a e` or `-a extended`, `-a u` or `-a unicode`) (default is NORMAL_CHARS)
 <br />
 `asci <img_path> -w 200` - Set output width (default: 100)
 <br />
