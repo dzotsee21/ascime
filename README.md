@@ -17,7 +17,7 @@ commands:
 
 You can also combine flags:
 <br />
-`ascime <img_path> -c only -s -w 200`
+`ascime <img_path> -c only -a extended -w 200`
 
 examples:
 <br />
