@@ -19,7 +19,6 @@ import (
 	rDraw "golang.org/x/image/draw"
 )
 
-
 // default params
 var CHAR_LIST = DEFAULT_CHARS
 var colored = false
@@ -123,43 +122,54 @@ func setParams(args []string) ([]string, error) {
 func run(imagePaths []string) {
 	var asciiStr string
 	for _, path := range imagePaths {
+		// if path is a gif
 		if strings.Contains(path, ".gif") {
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-			frameDelay := 100 * time.Millisecond // gif speed
-
-			go func() {
-				<-c
-				fmt.Print("\033[0m")
-				fmt.Print("\033[H\033[2J")
-				err := os.RemoveAll("tmp")
-				if err != nil {
-					fmt.Println("Failed to remove tmp:", err)
-				}
-				os.Exit(0)
-			}()
-
-			frames, err := SplitAnimatedGIF(path)
-			if err != nil {
-				log.Fatal(err)
-			}
-			for {
-				for _, frame := range frames {
-					asciiStr = imageToAscii(frame, width)
-
-					fmt.Print("\033[2J")
-					fmt.Print("\033[H")
-
-					fmt.Println(asciiStr)
-
-					time.Sleep(frameDelay)
-				}
-			}
+			runGif(path)
+		} else {
+			asciiStr = imageToAscii(path, width)
+			fmt.Println(asciiStr)
 		}
+	}
+}
 
-		asciiStr = imageToAscii(path, width)
-		fmt.Println(asciiStr)
+func runGif(path string) {
+	asciiStr := ""
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	frameDelay := 100 * time.Millisecond // gif speed
+
+	go func() {
+		<-c
+		fmt.Print("\033[0m")
+		fmt.Print("\033[H\033[2J")
+		err := os.RemoveAll("tmp")
+		if err != nil {
+			fmt.Println("Failed to remove tmp:", err)
+		}
+		os.Exit(0)
+	}()
+
+	frames, err := SplitAnimatedGIF(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var asciiFrames []string
+	for _, frame := range frames {
+		asciiStr = imageToAscii(frame, width)
+		asciiFrames = append(asciiFrames, asciiStr)
+	}
+
+	for {
+		for _, asciiFrame := range asciiFrames {
+			fmt.Print("\033[2J")
+			fmt.Print("\033[H")
+
+			fmt.Println(asciiFrame)
+
+			time.Sleep(frameDelay)
+		}
 	}
 }
 
